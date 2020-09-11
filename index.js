@@ -10,6 +10,7 @@ const client = new CommandoClient({
 	//				krc
 	owner: ['520169649879384074'],
 	invite: 'https://discord.gg/43acR23',
+	partials: ['MESSAGE', 'CHANNEL', 'REACTION'],
 });
 
 const alLog = new AlLog();
@@ -55,6 +56,7 @@ client.registry
 	})
 	.registerCommandsIn(path.join(__dirname, 'commands'));
 
+
 client.once('ready', () => {
 	console.log(`Logged in as ${client.user.tag}! (${client.user.id})`);
 	client.user.setActivity(`${client.commandPrefix}help`);
@@ -66,6 +68,28 @@ client.on('message', message => {
 });
 
 client.on('error', console.error);
+
+client.on('messageReactionAdd', async (reaction, user) => {
+	// When we receive a reaction we check if the reaction is partial or not
+	if (reaction.partial) {
+		// If the message this reaction belongs to was removed the fetching might result in an API error, which we need to handle
+		try {
+			await reaction.fetch();
+
+		}
+		catch (error) {
+			console.log('Something went wrong when fetching the message: ', error);
+			// Return as `reaction.message.author` may be undefined/null
+			return;
+		}
+	}
+	console.log(reaction.emoji.id);
+	if (reaction.emoji != null && reaction.emoji.id == '674859298131542029') {
+		const messageContent = reaction.message;
+		reaction.message.delete();
+		reaction.message.channel.send(`@${user.tag} please upload your code to PasteBin`);
+	}
+});
 
 client.login(token);
 

@@ -3,7 +3,7 @@
 /* eslint-disable indent */
 const request = require('request');
 const { Command } = require('discord.js-commando');
-const ALR = require('../../util/resolveAuditLog.js');
+const ALR = require('../../util/tools.js');
 
 const AuditLogResolver = new ALR();
 
@@ -55,7 +55,7 @@ module.exports = class LogsCommand extends Command {
 		})
 			.then(audit => {
 				audit.entries.forEach(entrie => {
-					formData.text += AuditLogResolver.resolve(message, entrie);
+					formData.text += AuditLogResolver.resolveAutitLog(message, entrie);
 				});
 				request.post({ url: 'https://file.io', formData: formData }, function optionalCallback(err, httpResponse, body) {
 					const obj = JSON.parse(body);

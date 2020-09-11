@@ -62,8 +62,9 @@ const changeKeyDescription = {
 };
 
 
-class AuditLogResolver {
-	resolve(message, entrie) {
+class Tools {
+
+	resolveAuditLog(message, entrie) {
 		let resolvedEntrie = '';
 
 		switch (entrie.action) {
@@ -303,4 +304,4 @@ function addKeyDescription(change) {
 	}
 }
 
-module.exports = AuditLogResolver;
+module.exports = Tools;
