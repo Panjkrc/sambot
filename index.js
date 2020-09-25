@@ -1,9 +1,13 @@
+/* eslint-disable no-undef */
 /* eslint-disable no-inline-comments */
 const { CommandoClient } = require('discord.js-commando');
+const https = require('https');
+const fs = require('fs');
 const path = require('path');
 const { prefix, token } = require('./config.json');
 const AntiSpam = require('discord-anti-spam');
 const AlLog = require('./util/log.js');
+const { isText } = require('istextorbinary');
 
 const client = new CommandoClient({
 	commandPrefix: prefix,
@@ -16,6 +20,7 @@ const client = new CommandoClient({
 const alLog = new AlLog();
 alLog.run(client);
 
+const forbidenExtensions = ['bat', 'bin', 'cmd', 'rom', 'cpl', 'exe', 'gadget', 'inf1', 'ins', 'inx', 'isu', 'job', 'jse', 'lnk', 'msc', 'msi', 'msp', 'mst', 'paf', 'pif', 'ps1', 'reg', 'rgs', 'scr', 'sct', 'shb', 'shs', 'u3p', 'vb', 'vbe', 'vbscript', 'ws', 'wsf', 'wsh', 'zip', 'rar', '7z', 'tar', 'jar'];
 const channelsToReactTo = ['541501807638085644', '541501708765757442', '541833033439772692', '542204514900508683', '554553231183970326', '558978622677843969', '541502163424247828', '541502408866660353', '541838123643043841', '713354216248311868', '693845605478563940'];
 
 const antiSpam = new AntiSpam({
@@ -65,11 +70,12 @@ client.once('ready', () => {
 client.on('message', message => {
 	antiSpam.message(message);
 	addVoteReations(message);
+	checkForFile(message);
 });
 
 client.on('error', console.error);
 
-client.on('messageReactionAdd', async (reaction, user) => {
+client.on('messageReactionAdd', async (reaction) => {
 	if (reaction.message.member.guild.me.hasPermission('KICK_MEMBERS')) {
 		// When we receive a reaction we check if the reaction is partial or not
 		if (reaction.partial) {
@@ -94,6 +100,72 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
 client.login(token);
 
+function checkForFile(message) {
+	if (message.attachments.find(attachment => {
+		if (!message.member.hasPermission('KICK_MEMBERS')) {
+			const extension = attachment.name.split('.').pop();
+			if (extension == 'ino' && attachment.size < 1000) {
+
+				const download = function (url, dest, cb) {
+					const file = fs.createWriteStream(dest);
+					https.get(url, function (response) {
+						response.pipe(file);
+						file.on('finish', function () {
+							file.close(cb);
+						});
+					});
+				};
+
+				download(attachment.url, './downloaded-attachment.ino', () => {
+					const readStream = fs.createReadStream('./downloaded-attachment.ino', 'utf8');
+					let data = '';
+					readStream.on('data', function (chunk) {
+						data += chunk;
+					}).on('end', function () {
+						const mContent = message.content;
+						console.log(mContent.lenght);
+						if (mContent) {
+
+							message.channel.send(`${message.author} said:\n\n${message.content}`);
+						}
+						message.channel.send(`\`${attachment.name}\` file content sent by ${message.author}\n\`\`\`cpp\n${data}\n\`\`\``);
+
+						fs.unlink('./downloaded-attachment.ino', (err) => {
+							if (err) {
+								console.error(err);
+								return;
+							}
+						});
+					});
+				});
+				deleteAttachment(message, attachment);
+			}
+			else if (isText(attachment.name)) {
+				console.log(`The file ${attachment.name} was detected as text file`);
+				message.channel.send(`${message.author} We don't support file debugging. Please paste you code to <https://pastebin.com> or post it in code tags like this:\n\\\`\`\`cpp\n\tyour code goes here\n\`\`\``);
+				deleteAttachment(message, attachment);
+
+			}
+			else if (forbidenExtensions.includes(extension)) {
+				message.channel.send(`${message.author} you can't post that here, \`.${extension}\` is a forbidden file extension!`);
+				deleteAttachment(message, attachment);
+			}
+
+		}
+	}));
+}
+
+function deleteAttachment(message, attachment) {
+	if (message.guild.id == '541496165976244224') {
+		const channel = message.guild.channels.cache.get('541747349224161310');
+
+		channel.send(`Message by ${message.author} deleted in ${message.channel}:\n${message.content}`, { files: [attachment] });
+	}
+	setTimeout(function () {
+		message.delete();
+	}, 1000);
+
+}
 
 function addVoteReations(message) {
 	channelsToReactTo.forEach(channelsToReact => {
