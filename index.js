@@ -1,3 +1,4 @@
+/* eslint-disable no-lonely-if */
 /* eslint-disable no-undef */
 /* eslint-disable no-inline-comments */
 const { CommandoClient } = require('discord.js-commando');
@@ -102,43 +103,11 @@ client.login(token);
 
 function checkForFile(message) {
 	if (message.attachments.find(attachment => {
+		const extension = attachment.name.split('.').pop();
 		if (!message.member.hasPermission('KICK_MEMBERS')) {
-			const extension = attachment.name.split('.').pop();
+
 			if (extension == 'ino' && attachment.size < 1000) {
-
-				const download = function (url, dest, cb) {
-					const file = fs.createWriteStream(dest);
-					https.get(url, function (response) {
-						response.pipe(file);
-						file.on('finish', function () {
-							file.close(cb);
-						});
-					});
-				};
-
-				download(attachment.url, './downloaded-attachment.ino', () => {
-					const readStream = fs.createReadStream('./downloaded-attachment.ino', 'utf8');
-					let data = '';
-					readStream.on('data', function (chunk) {
-						data += chunk;
-					}).on('end', function () {
-						const mContent = message.content;
-						console.log(mContent.lenght);
-						if (mContent) {
-
-							message.channel.send(`${message.author} said:\n\n${message.content}`);
-						}
-						message.channel.send(`\`${attachment.name}\` file content sent by ${message.author}\n\`\`\`cpp\n${data}\n\`\`\``);
-
-						fs.unlink('./downloaded-attachment.ino', (err) => {
-							if (err) {
-								console.error(err);
-								return;
-							}
-						});
-					});
-				});
-				deleteAttachment(message, attachment);
+				convertInoToText(message, attachment);
 			}
 			else if (isText(attachment.name)) {
 				console.log(`The file ${attachment.name} was detected as text file`);
@@ -152,7 +121,47 @@ function checkForFile(message) {
 			}
 
 		}
+		else {
+			if (extension == 'ino' && attachment.size < 1000 && message.channel.id == '630736100742397960') {
+				convertInoToText(message, attachment);
+			}
+		}
 	}));
+}
+
+function convertInoToText(message, attachment) {
+	const tempFile = './downloaded-attachment.ino';
+	const download = function (url, dest, cb) {
+		const file = fs.createWriteStream(dest);
+		https.get(url, function (response) {
+			response.pipe(file);
+			file.on('finish', function () {
+				file.close(cb);
+			});
+		});
+	};
+
+	download(attachment.url, tempFile, () => {
+		const readStream = fs.createReadStream(tempFile, 'utf8');
+		let data = '';
+		readStream.on('data', function (chunk) {
+			data += chunk;
+		}).on('end', function () {
+			if (message.content) {
+				message.channel.send(`${message.author} said:\n\n${message.content}`);
+			}
+			message.channel.send(`\`${attachment.name}\` file content sent by ${message.author}\n\`\`\`cpp\n${data}\n\`\`\``);
+
+			fs.unlink(tempFile, (err) => {
+				if (err) {
+					console.error(err);
+					return;
+				}
+			});
+		});
+	});
+	deleteAttachment(message, attachment);
+
 }
 
 function deleteAttachment(message, attachment) {
