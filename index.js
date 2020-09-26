@@ -111,7 +111,10 @@ function checkForFile(message) {
 			}
 			else if (isText(attachment.name)) {
 				console.log(`The file ${attachment.name} was detected as text file`);
-				message.channel.send(`${message.author} We don't support file debugging. Please paste you code to <https://pastebin.com> or post it in code tags like this:\n\\\`\`\`cpp\n\tyour code goes here\n\`\`\``);
+				if (message.content) {
+					message.channel.send(`${message.author} said:\n\n${message.content}`);
+				}
+				message.channel.send(`${message.author} tried to submit a file.  Please note:   We do not support file debugging. Please paste you code to <https://pastebin.com/> or post it in code tags like this:\n\\\`\`\`cpp\n\tyour code goes here\n\`\`\``);
 				deleteAttachment(message, attachment);
 
 			}
