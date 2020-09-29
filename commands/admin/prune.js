@@ -22,7 +22,7 @@ module.exports = class PruneCommand extends Command {
 
 	run(message, { amount }) {
 
-		message.channel.bulkDelete(amount, true).catch(err => {
+		message.channel.bulkDelete(amount + 1, true).catch(err => {
 			console.error(err);
 			message.channel.send('there was an error trying to prune messages in this channel!');
 		});
